@@ -1,0 +1,73 @@
+﻿@page "/quotes/add"
+@page "/quotes/edit/{Id:int}"
+@using Shared
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+<h1>@Title Quotes</h1>
+<hr />
+<EditForm Model="@quote" OnValidSubmit="SaveUser">
+    <DataAnnotationsValidator />
+    <div class="mb-3">
+        <label for="Author" class="form-label">Author</label>
+        <div class="col-md-4">
+            <InputText class="form-control" @bind-Value="quote.Author" />
+        </div>
+        <ValidationMessage For="@(() => quote.Author)" />
+    </div>
+    <div class="mb-3">
+        <label for="Tags" class="form-label">Tags</label>
+        <div class="col-md-4">
+            <InputText class="form-control" @bind-Value="tagsAsString"/>
+        </div>
+        <ValidationMessage For="@(() => tagsAsString)" />
+    </div>
+    <div class="mb-3">
+        <label for="Quotes" class="form-label">Quotes</label>
+        <div class="col-md-4">
+            <InputTextArea class="form-control" @bind-Value="quote.QuoteText" />
+        </div>
+        <ValidationMessage For="@(() => quote.QuoteText)" />
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button class="btn btn-light" @onclick="Cancel">Cancel</button>
+    </div>
+</EditForm>
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    protected string Title = "Add";
+    protected Quote quote = new();
+
+    private string tagsAsString;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id != 0)
+        {
+            Title = "Edit";
+            quote = await Http.GetFromJsonAsync<Quote>("api/Quote/" + Id);
+            tagsAsString = string.Join(", ", quote.Tags);
+        }
+    }
+    protected async Task SaveUser()
+    {
+        var tagList = tagsAsString.Split(',');
+        quote.Tags = tagList.ToList();
+
+        if (quote.Id != 0)
+        {
+            await Http.PutAsJsonAsync("api/Quote", quote);
+        }
+        else
+        {
+            await Http.PostAsJsonAsync("api/Quote", quote);
+        }
+        Cancel();
+    }
+
+    public void Cancel()
+    {
+        NavigationManager.NavigateTo("/fetchquotes");
+    }
+}
